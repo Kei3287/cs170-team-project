@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[233]:
 
 
 import numpy as np
 
 
-# In[226]:
+# In[272]:
 
 
 class RGraph():
@@ -18,6 +18,7 @@ class RGraph():
         self.edge_matrix = np.zeros((self.num_location, self.num_location))
         self.visited = {}
         self.locations = [starting_location]
+        self.homes = []
 
     def check_if_connected(self):
         return all([value for value in self.visited.values()])
@@ -28,12 +29,9 @@ class RGraph():
             if self.edge_matrix[i][j] != 0 and not self.visited[j]:
                 self.dfs(j)
 
-
-    def generate_random_edge(self):
-        return np.around(np.random.uniform(50,100), 5)
     def random_input_generator(self):
 
-        p = 0.6
+        p = 0.7
         for i in range(self.num_location-1):
             self.locations.append("location{}".format(i+1))
 
@@ -48,23 +46,23 @@ class RGraph():
         # check if the graph is connected
         self.visited = dict([(i, False) for i in range(self.num_location)])
         self.dfs(0)
-#         if self.check_if_connected():
-#             print('connected')
-#         else:
-#             print('not connected')
+        if self.check_if_connected():
+            print('connected')
+        else:
+            print('not connected')
 
-        homes = self.locations.copy()[1:]
-        np.random.shuffle(homes)
+        self.homes = self.locations.copy()[1:self.num_home+1]
+        np.random.shuffle(self.homes)
 
-        self.generate_input(homes)
+        self.generate_input()
 
-    def generate_input(self, homes):
+    def generate_input(self):
         print(self.num_location)
         print(self.num_home)
 
         [print(v, end =  ' ') for v in self.locations]
         print()
-        [print(h, end =  ' ') for h in homes[:self.num_home]]
+        [print(h, end =  ' ') for h in self.homes[:self.num_home]]
         print()
         print(self.starting_location)
         for i in range(self.num_location):
@@ -75,22 +73,34 @@ class RGraph():
                     print(str(self.edge_matrix[i][j]), end = ' ')
             print()
 
+    def generate_random_edge(self):
+        return np.around(np.random.uniform(50,100), 5)
 
-# In[ ]:
+    def generate_output(self):
+        print("Soda location1 Soda")
+        print(1)
+        print("location1", end = ' ')
+        for h in self.homes:
+            print(h, end = ' ')
 
 
 
+# In[280]:
 
 
-# In[225]:
-
-
-g = RGraph(100, 50, "Soda")
+g = RGraph(50, 25, "Soda")
 g.random_input_generator()
 
 
-# In[223]:
+# In[281]:
 
+
+print("===========================================================")
+
+g.generate_output()
+
+
+# In[279]:
 
 
 
