@@ -30,8 +30,14 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
     final_path = []
     final_ret_dict = {}
     
-    # 10000 random iterations
-    for i in range(10000):
+    if len(adjacency_matrix[0]) <= 50:
+        num_iterations = 100
+    elif len(adjacency_matrix[0]) <= 100:
+        num_iterations = 10
+    elif len(adjacency_matrix[0]) > 100:
+        num_iterations = 1
+    
+    for i in range(num_iterations):
 
         # generating a random path first (Can be optimized by choosing paths from MST and using DFS)
         path = generate_path(list_of_locations, starting_car_location, adjacency_matrix)
@@ -40,7 +46,8 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
         drop_off_locations = generate_drop_off_locations(path)
         
         # generate dictionary mapping drop off locations to list of ta's
-        ret_dict = find_closest_dropoff_location_to_ta(drop_off_locations, list_of_locations, list_of_homes, adjacency_matrix)
+        dict_ta_to_dropoff_location = find_closest_dropoff_location_to_ta(drop_off_locations, list_of_locations, list_of_homes, adjacency_matrix)
+        ret_dict = convert_to_return(dict_ta_to_dropoff_location)
     
         curr_total_energy = 0
     
@@ -51,7 +58,8 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
         # finding total_energy from ta's walking as well
         for k in ret_dict:
             for v in ret_dict[k]:
-                curr_total_energy += adjacency_matrix[k][v]
+                if (k != v): # if they equal, the cost is 0
+                    curr_total_energy += dict_ta_to_dropoff_location[v][1]  
                 
         if curr_total_energy < total_energy:
             # update path and ret_dict
@@ -69,13 +77,25 @@ def generate_path(list_of_locations, starting_car_location, adjacency_matrix):
     path = []
     
     starting_index = list_of_locations.index(starting_car_location)
-    next_index = adjacency_matrix[starting_index].index(random.choice([i for i in adjacency_matrix[starting_index] if i != 0]))
+    next_index = adjacency_matrix[starting_index].index(random.choice([i for i in adjacency_matrix[starting_index] if i != 0 and i != 'x']))
     path.append(starting_index)
     path.append(next_index)
+
+    path_counter = 0
     while next_index != starting_index:
-        next_index = adjacency_matrix[next_index].index(random.choice([i for i in adjacency_matrix[next_index] if i != 0]))
-        path.append(next_index)
-        
+        # this first if condition solely for limiting path size for performance reasons
+        if path_counter >= 100 and (adjacency_matrix[next_index][starting_index] != 0 and adjacency_matrix[next_index][starting_index] != 'x'):
+            next_index = starting_index
+            path.append(next_index)
+        # another performance sacrifice...if path_counter exceeds 2000, drop everyone off at start. This usually happens with sparse graphs
+        elif path_counter >= 2000:
+            path = []
+            path.append(starting_index)
+        else:
+            next_index = adjacency_matrix[next_index].index(random.choice([i for i in adjacency_matrix[next_index] if i != 0 and i != 'x']))
+            path.append(next_index)
+
+        path_counter += 1        
     return path
 
 
@@ -102,7 +122,11 @@ def find_closest_dropoff_location_to_ta(drop_off_locations, list_of_locations, l
             dist_d_to_h = dijkstra(num_vertices, adjacency_matrix, d)[home_index]
             if dist_d_to_h < dict_ta_to_dropoff_location[home_index][1]:
                 dict_ta_to_dropoff_location[home_index] = [d, dist_d_to_h]
-    
+                
+    return dict_ta_to_dropoff_location
+
+
+def convert_to_return(dict_ta_to_dropoff_location): 
     # converting dict_ta_to_dropoff_location to output dictionary format
     ret_dict = {}  # dict mapping dropoff_location to list_of_TAs
     for h in dict_ta_to_dropoff_location:
@@ -112,7 +136,6 @@ def find_closest_dropoff_location_to_ta(drop_off_locations, list_of_locations, l
             ret_dict[dict_ta_to_dropoff_location[h][0]] = [h]
     
     return ret_dict
-
 
 
 # returns array that represents distances from src to each other vertex (by index) in graph 
@@ -125,7 +148,7 @@ def dijkstra(num_vertices, adjacency_matrix, src):
         u = minDistance(num_vertices, dist, sptSet)
         sptSet[u] = True 
         for v in range(num_vertices):
-            if adjacency_matrix[u][v] > 0 and sptSet[v] == False and \
+            if adjacency_matrix[u][v] != 'x' and adjacency_matrix[u][v] > 0 and sptSet[v] == False and \
                 dist[v] > dist[u] + adjacency_matrix[u][v]:
                 dist[v] = dist[u] + adjacency_matrix[u][v]
 
