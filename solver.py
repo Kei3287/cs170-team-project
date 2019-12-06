@@ -25,13 +25,19 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
         A dictionary mapping drop-off location to a list of homes of TAs that got off at that particular location
         NOTE: both outputs should be in terms of indices not the names of the locations themselves
     """
+    adjacency_matrix = [[0 if entry == 'x' else entry for entry in row] for row in adjacency_matrix]
+    mst_obj = MST(list_of_locations, list_of_homes, adjacency_matrix, starting_car_location)
+    approximator = tspApproximation(mst_obj.V, mst_obj.list_of_homes, adjacency_matrix, mst_obj.mst, mst_obj.starting_car_location)
+    tour = approximator.find_tour()
+    drop_off = { mst_obj.start_index: [list_of_locations.index(x) for x in list_of_homes]}
+    return tour, drop_off
 
 
 class MST():
     """
     reference: https://www.geeksforgeeks.org/prims-algorithm-simple-implementation-for-adjacency-matrix-representation/
     """
-    def __init__(self, list_of_locations, adjacency_matrix, starting_car_location):
+    def __init__(self, list_of_locations, list_of_homes, adjacency_matrix, starting_car_location):
         self.V = list_of_locations
         self.num_location = len(self.V)
         self.adjacency_matrix = adjacency_matrix
@@ -40,6 +46,11 @@ class MST():
         self.start_index = list_of_locations.index(starting_car_location)
         self.inMST[self.start_index] = True
         self.mst = [[0 for i in range(self.num_location)] for j in range(self.num_location)]
+
+        self.visited = {}
+        self.list_of_homes = list_of_homes
+        self.indices_to_remove = []
+
 
     def is_valid_edge(self, u, v):
         if u == v:
@@ -69,6 +80,87 @@ class MST():
                 self.mst[b][a] = min_val
             edge_count += 1
         return self.mst
+
+    def remove_non_TA_homes(self):
+        self.dfs(self.start_index)
+        self.indices_to_remove.sort(reverse=True)
+        print(self.indices_to_remove)
+        for i in self.indices_to_remove:
+            for j in range(self.num_location):
+                self.mst[j].pop(i)
+            self.mst.pop(i)
+            self.V.pop(i)
+            self.num_location -= 1
+        return self.mst
+
+    def dfs(self, start):
+        self.visited = dict([(i, False) for i in range(self.num_location)])
+        stack = []
+        stack.append(start)
+        while (len(stack)):
+            s = stack[-1]
+            stack.pop()
+
+            self.visited[s] = True
+            leaf = True
+            for i in range(self.num_location):
+                if not self.visited[i]:
+                    leaf = False
+                    stack.append(i)
+
+            if self.is_leaf(s, leaf, stack) and not self.is_TA_home(s):
+                self.indices_to_remove.append(s)
+
+    def is_leaf(self, i, leaf, stack):
+        if leaf:
+            return True
+        for j in range(self.num_location):
+            if j not in stack and self.mst[i][j] != 0 and j not in self.indices_to_remove:
+                return False
+        return True
+
+    def is_TA_home(self, i):
+        return i == self.start_index or self.V[i] in self.list_of_homes
+
+
+class tspApproximation():
+    def __init__(self, list_of_locations, list_of_homes, adjacency_matrix, mst, starting_car_location):
+        self.V = list_of_locations
+        self.list_of_homes = list_of_homes
+        self.num_location = len(self.V)
+        self.adjacency_matrix = adjacency_matrix
+        self.mst = mst
+        self.starting_car_location = starting_car_location
+        self.start_index = list_of_locations.index(starting_car_location)
+        self.visited = self.visited = dict([(i, False) for i in range(self.num_location)])
+        self.dfs_tour = []
+
+    def dfs(self, i):
+        self.visited[i] = True
+        self.dfs_tour.append(i)
+        for j in range(self.num_location):
+            if self.mst[i][j] != 0 and not self.visited[j]:
+                self.dfs(j)
+                self.dfs_tour.append(i)
+
+    def find_tour(self):
+        self.dfs(self.start_index)
+        print(self.dfs_tour)
+        return self.compress_tour()
+
+    def compress_tour(self):
+        for _ in range(len(self.dfs_tour)):
+            for i in range(len(self.dfs_tour)):
+                if i == len(self.dfs_tour) - 1:
+                    break
+                prev_ind = self.dfs_tour[i-1]
+                next_ind = self.dfs_tour[i+1]
+                if self.dfs_tour[i] in self.dfs_tour[:i] and self.adjacency_matrix[prev_ind][next_ind] != 0:
+                    self.dfs_tour.pop(i)
+                    break
+        return self.dfs_tour
+
+
 
 """
 ======================================================================
