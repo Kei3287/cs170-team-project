@@ -82,7 +82,7 @@ def generate_path(list_of_locations, starting_car_location, adjacency_matrix):
 def generate_drop_off_locations(path):
     path_length = len(path)
     # pick a random number of locations as drop-off locations
-    drop_off_locations = random.sample(path, random.randrange(1, path_length - 1))
+    drop_off_locations = random.sample(path, random.randrange(1, path_length))
     return drop_off_locations
 
 
