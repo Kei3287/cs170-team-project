@@ -70,7 +70,7 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
     
     return final_path, final_ret_dict
     
-
+ 
 
 # Helper Functions for solve
 def generate_path(list_of_locations, starting_car_location, adjacency_matrix):
