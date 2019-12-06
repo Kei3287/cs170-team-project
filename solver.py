@@ -4,6 +4,7 @@ sys.path.append('..')
 sys.path.append('../..')
 import argparse
 import utils
+import student_utils
 
 from student_utils import *
 """
@@ -27,30 +28,36 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
     """
     adjacency_matrix = [[0 if entry == 'x' else entry for entry in row] for row in adjacency_matrix]
     mst_obj = MST(list_of_locations, list_of_homes, adjacency_matrix, starting_car_location)
-    approximator = tspApproximation(mst_obj.V, mst_obj.list_of_homes, adjacency_matrix, mst_obj.mst, mst_obj.starting_car_location)
+    mst_tree = mst_obj.construct_mst()
+    approximator = tspApproximation(list_of_locations, list_of_homes, adjacency_matrix, mst_tree, starting_car_location)
     tour = approximator.find_tour()
-    drop_off = { mst_obj.start_index: [list_of_locations.index(x) for x in list_of_homes]}
-    return tour, drop_off
 
+    drop_off = {}
+    homes = student_utils.convert_locations_to_indices(list_of_homes, list_of_locations)
+    for h in homes:
+        drop_off[h] = [h]
+    tour = student_utils.convert_locations_to_indices(tour, list_of_locations)
+    return tour, drop_off
 
 class MST():
     """
     reference: https://www.geeksforgeeks.org/prims-algorithm-simple-implementation-for-adjacency-matrix-representation/
     """
     def __init__(self, list_of_locations, list_of_homes, adjacency_matrix, starting_car_location):
-        self.V = list_of_locations
-        self.num_location = len(self.V)
+        self.list_of_locations = list_of_locations
+        self.num_location = len(self.list_of_locations)
         self.adjacency_matrix = adjacency_matrix
         self.starting_car_location = starting_car_location
         self.inMST = [False] * self.num_location
         self.start_index = list_of_locations.index(starting_car_location)
         self.inMST[self.start_index] = True
-        self.mst = [[0 for i in range(self.num_location)] for j in range(self.num_location)]
+#         self.mst = [[0 for i in range(self.num_location)] for j in range(self.num_location)]
+        self.mst = np.zeros((self.num_location, self.num_location))
 
         self.visited = {}
         self.list_of_homes = list_of_homes
         self.indices_to_remove = []
-
+        self.mst_tree = None
 
     def is_valid_edge(self, u, v):
         if u == v:
@@ -79,73 +86,43 @@ class MST():
                 self.mst[a][b] = min_val
                 self.mst[b][a] = min_val
             edge_count += 1
-        return self.mst
-
-    def remove_non_TA_homes(self):
-        self.dfs(self.start_index)
-        self.indices_to_remove.sort(reverse=True)
-        print(self.indices_to_remove)
-        for i in self.indices_to_remove:
-            for j in range(self.num_location):
-                self.mst[j].pop(i)
-            self.mst.pop(i)
-            self.V.pop(i)
-            self.num_location -= 1
-        return self.mst
-
-    def dfs(self, start):
         self.visited = dict([(i, False) for i in range(self.num_location)])
-        stack = []
-        stack.append(start)
-        while (len(stack)):
-            s = stack[-1]
-            stack.pop()
+        self.mst_tree = self.convert_to_tree(self.start_index)
+        return self.mst_tree
 
-            self.visited[s] = True
-            leaf = True
-            for i in range(self.num_location):
-                if not self.visited[i]:
-                    leaf = False
-                    stack.append(i)
-
-            if self.is_leaf(s, leaf, stack) and not self.is_TA_home(s):
-                self.indices_to_remove.append(s)
-
-    def is_leaf(self, i, leaf, stack):
-        if leaf:
-            return True
+    def convert_to_tree(self, i):
+        self.visited[i] = True
+        branches = []
         for j in range(self.num_location):
-            if j not in stack and self.mst[i][j] != 0 and j not in self.indices_to_remove:
-                return False
-        return True
-
-    def is_TA_home(self, i):
-        return i == self.start_index or self.V[i] in self.list_of_homes
+            if self.mst[i][j] != 0 and not self.visited[j]:
+                branch = self.convert_to_tree(j)
+                branches.append(branch)
+        if not branches:
+            return Tree(self.list_of_locations[i], i, self.list_of_homes)
+        else:
+            return Tree(self.list_of_locations[i], i, self.list_of_homes, branches)
 
 
 class tspApproximation():
-    def __init__(self, list_of_locations, list_of_homes, adjacency_matrix, mst, starting_car_location):
-        self.V = list_of_locations
+    def __init__(self, list_of_locations, list_of_homes, adjacency_matrix, mst_tree, starting_car_location):
+        self.list_of_locations = list_of_locations
         self.list_of_homes = list_of_homes
-        self.num_location = len(self.V)
+        self.num_location = len(self.list_of_locations)
         self.adjacency_matrix = adjacency_matrix
-        self.mst = mst
+        self.mst_tree = mst_tree
         self.starting_car_location = starting_car_location
         self.start_index = list_of_locations.index(starting_car_location)
-        self.visited = self.visited = dict([(i, False) for i in range(self.num_location)])
+        self.visited = self.visited = dict([(loc, False) for loc in self.list_of_locations])
         self.dfs_tour = []
 
-    def dfs(self, i):
-        self.visited[i] = True
-        self.dfs_tour.append(i)
-        for j in range(self.num_location):
-            if self.mst[i][j] != 0 and not self.visited[j]:
-                self.dfs(j)
-                self.dfs_tour.append(i)
+    def dfs(self, s):
+        self.dfs_tour.append(s.name)
+        for b in s.branches:
+            self.dfs(b)
+            self.dfs_tour.append(s.name)
 
     def find_tour(self):
-        self.dfs(self.start_index)
-        print(self.dfs_tour)
+        self.dfs(self.mst_tree)
         return self.compress_tour()
 
     def compress_tour(self):
@@ -153,14 +130,32 @@ class tspApproximation():
             for i in range(len(self.dfs_tour)):
                 if i == len(self.dfs_tour) - 1:
                     break
-                prev_ind = self.dfs_tour[i-1]
-                next_ind = self.dfs_tour[i+1]
+                prev_ind = self.list_of_locations.index(self.dfs_tour[i-1])
+                next_ind = self.list_of_locations.index(self.dfs_tour[i+1])
                 if self.dfs_tour[i] in self.dfs_tour[:i] and self.adjacency_matrix[prev_ind][next_ind] != 0:
                     self.dfs_tour.pop(i)
                     break
         return self.dfs_tour
 
 
+class Tree():
+    def __init__(self, name, index, list_of_homes, branches=[]):
+        self.name = name
+        self.index = index
+        self.branches = branches
+        self.list_of_homes = list_of_homes
+
+    def is_leaf(self):
+        return not self.branches
+
+    def is_home(self):
+        return self.name in self.list_of_homes
+
+    def print_tree(self):
+        if not self.branches:
+            return
+        for b in self.branches:
+            b.print_tree()
 
 """
 ======================================================================
