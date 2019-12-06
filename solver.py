@@ -25,7 +25,45 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
         A dictionary mapping drop-off location to a list of homes of TAs that got off at that particular location
         NOTE: both outputs should be in terms of indices not the names of the locations themselves
     """
-    pass
+
+
+class MST():
+    def __init__(self, list_of_locations, adjacency_matrix, starting_car_location):
+        self.V = list_of_locations
+        self.adjacency_matrix = adjacency_matrix
+        self.starting_car_location = starting_car_location
+        self.inMST = [False] * len(self.V)
+        self.inMST[list_of_locations.index(starting_car_location)] = True
+        self.mst = [[0] * len(self.V)] * len(self.V)
+
+    def isValidEdge(self, u, v):
+        if u == v:
+            return False
+        if self.inMST[u] == False and self.inMST[v] == False:
+            return False
+        elif self.inMST[u] == True and self.inMST[v] == True:
+            return False
+        return True
+
+    def constructMst(self):
+        edge_count = 0
+        while edge_count < len(self.V) - 1:
+            minVal = sys.maxsize
+            a = -1
+            b = -1
+            for i in range(len(self.V)):
+                for j in range(len(self.V)):
+                    if self.adjacency_matrix[i][j] < minVal and self.adjacency_matrix[i][j] != 0:
+                        if self.isValidEdge(i, j):
+                            minVal = self.adjacency_matrix[i][j]
+                            a = i
+                            b = j
+            if a != -1 and b != -1:
+                self.inMST[a] = self.inMST[b] = True
+                self.mst[a][b] = minVal
+            edge_count += 1
+        return self.mst
+
 
 """
 ======================================================================
