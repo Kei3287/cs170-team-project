@@ -34,7 +34,7 @@ class MST():
         self.starting_car_location = starting_car_location
         self.inMST = [False] * len(self.V)
         self.inMST[list_of_locations.index(starting_car_location)] = True
-        self.mst = [[0] * len(self.V)] * len(self.V)
+        self.mst = [[0 for i in range(len(self.V))] for j in range(len(self.V))]
 
     def isValidEdge(self, u, v):
         if u == v:
