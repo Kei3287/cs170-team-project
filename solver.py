@@ -35,7 +35,7 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
     elif len(adjacency_matrix[0]) <= 100:
         num_iterations = 10
     elif len(adjacency_matrix[0]) > 100:
-        num_iterations = 1
+        num_iterations = 2
     
     for i in range(num_iterations):
 
