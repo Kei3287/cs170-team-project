@@ -75,11 +75,15 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
 # Helper Functions for solve
 def generate_path(list_of_locations, starting_car_location, adjacency_matrix):
     path = []
+    visited_nodes = []
     
     starting_index = list_of_locations.index(starting_car_location)
     next_index = adjacency_matrix[starting_index].index(random.choice([i for i in adjacency_matrix[starting_index] if i != 0 and i != 'x']))
     path.append(starting_index)
     path.append(next_index)
+    visited_nodes.append(starting_index)
+    visited_nodes.append(next_index)
+
 
     path_counter = 0
     while next_index != starting_index:
@@ -91,10 +95,16 @@ def generate_path(list_of_locations, starting_car_location, adjacency_matrix):
         elif path_counter >= 2000:
             path = []
             path.append(starting_index)
+            break
         else:
-            next_index = adjacency_matrix[next_index].index(random.choice([i for i in adjacency_matrix[next_index] if i != 0 and i != 'x']))
+            next_row = [i for i in adjacency_matrix[next_index] if i != 0 and i != 'x' and i not in visited_nodes]
+            if len([i for i in adjacency_matrix[next_index] if i != 0 and i != 'x' and i not in visited_nodes]) == 0:
+                next_row = [random.choice([i for i in adjacency_matrix[next_index] if i != 0 and i != 'x'])]
+                visited_nodes.remove(next_row[0])
+            next_index = adjacency_matrix[next_index].index(random.choice(next_row))
             path.append(next_index)
 
+        visited_nodes.append(next_index)
         path_counter += 1        
     return path
 
@@ -102,7 +112,10 @@ def generate_path(list_of_locations, starting_car_location, adjacency_matrix):
 def generate_drop_off_locations(path):
     path_length = len(path)
     # pick a random number of locations as drop-off locations
-    drop_off_locations = random.sample(path, random.randrange(1, path_length))
+    if (path_length == 1):
+        drop_off_locations = path
+    else:
+        drop_off_locations = random.sample(path, random.randrange(1, path_length))
     return drop_off_locations
 
 
