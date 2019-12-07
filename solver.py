@@ -32,10 +32,7 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
     approximator = tspApproximation(list_of_locations, list_of_homes, adjacency_matrix, mst_tree, starting_car_location)
     tour = approximator.find_tour()
 
-    drop_off = {}
-    homes = student_utils.convert_locations_to_indices(list_of_homes, list_of_locations)
-    for h in homes:
-        drop_off[h] = [h]
+    drop_off = approximator.drop_off
     tour = student_utils.convert_locations_to_indices(tour, list_of_locations)
     return tour, drop_off
 
@@ -103,6 +100,32 @@ class MST():
             return Tree(self.list_of_locations[i], i, self.list_of_homes, branches)
 
 
+class Tree():
+    def __init__(self, name, index, list_of_homes, branches=[]):
+        self.name = name
+        self.index = index
+        self.branches = branches
+        self.list_of_homes = list_of_homes
+        self.ta_homes = []
+        self.drive = True
+
+    def is_leaf(self):
+        return not self.branches
+
+    def is_home(self):
+        return self.name in self.list_of_homes
+
+    def print_tree(self):
+        print(self.index)
+        if not self.branches:
+            return
+        for b in self.branches:
+            b.print_tree()
+
+
+
+
+
 class tspApproximation():
     def __init__(self, list_of_locations, list_of_homes, adjacency_matrix, mst_tree, starting_car_location):
         self.list_of_locations = list_of_locations
@@ -114,14 +137,45 @@ class tspApproximation():
         self.start_index = list_of_locations.index(starting_car_location)
         self.visited = self.visited = dict([(loc, False) for loc in self.list_of_locations])
         self.dfs_tour = []
+        self.drop_off = {}
 
     def dfs(self, s):
         self.dfs_tour.append(s.name)
+        i = self.list_of_locations.index(s.name)
+        if s.ta_homes:
+            self.add_to_drop_off_ta(i, s.ta_homes)
         for b in s.branches:
-            self.dfs(b)
-            self.dfs_tour.append(s.name)
+            if b.drive:
+                self.dfs(b)
+                self.dfs_tour.append(s.name)
+
+    def sub_dfs(self, s, u):
+        if u.is_home():
+            u.ta_homes.append(u.name)
+        if not u.branches:
+            u.drive = False
+            return
+
+        for b in u.branches:
+            self.sub_dfs(s, b)
+            if not b.drive:
+                u.ta_homes.extend(b.ta_homes)
+            else:
+                u.drive = True
+        if len(u.ta_homes) > 1:
+            u.drive = True
+
+    def should_drive(self, s):
+        return self.sub_dfs(s, s)
+
+    def add_to_drop_off_ta(self, i, list_of_home):
+        if i in self.drop_off.keys():
+            self.drop_off[i].extend(student_utils.convert_locations_to_indices(list_of_home, self.list_of_locations))
+        else:
+            self.drop_off[i] = student_utils.convert_locations_to_indices(list_of_home, self.list_of_locations)
 
     def find_tour(self):
+        self.sub_dfs(self.mst_tree, self.mst_tree)
         self.dfs(self.mst_tree)
         return self.compress_tour()
 
@@ -136,26 +190,6 @@ class tspApproximation():
                     self.dfs_tour.pop(i)
                     break
         return self.dfs_tour
-
-
-class Tree():
-    def __init__(self, name, index, list_of_homes, branches=[]):
-        self.name = name
-        self.index = index
-        self.branches = branches
-        self.list_of_homes = list_of_homes
-
-    def is_leaf(self):
-        return not self.branches
-
-    def is_home(self):
-        return self.name in self.list_of_homes
-
-    def print_tree(self):
-        if not self.branches:
-            return
-        for b in self.branches:
-            b.print_tree()
 
 """
 ======================================================================
