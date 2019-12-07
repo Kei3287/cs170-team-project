@@ -1,0 +1,31 @@
+start c3 c2 c3 c8 c9 c12 c10 c14 c10 c9 c8 c11 c20 c11 c8 c3 c6 c7 c24 c18 c24 c23 c30 c29 c28 c26 c25 c27 c32 c31 c34 c31 c27 c29 c30 c23 c24 c7 c6 start e1 e2 e3 e4 e6 e8 e6 e4 e3 start e7 e11 e10 e12 e11 e7 start e17 e15 e17 start h1 h8 h1 h11 h12 h11 h1 h15 h1 start h2 h3 start h4 h23 h4 start h5 h20 h5 start h6 start d1 d2 d4 d5 d4 d2 d1 start
+29
+start a1 a2 a3 a4 a5
+c3 c5
+c2 c1
+c12 c13
+c10 c10
+c14 c15
+c20 c21
+c18 c17
+c23 c23
+c26 c26
+c27 c27
+c31 c31
+c34 c33
+e1 e19
+e2 e20
+e4 e21
+e8 e22
+e10 e23
+e12 e24
+e15 e25
+h8 h9
+h12 h13
+h2 h26
+h4 h22
+h23 h24
+h6 h17 h18
+d1 d1
+d4 d4
+d5 d5

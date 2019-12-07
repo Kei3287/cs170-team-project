@@ -34,6 +34,8 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
 
     drop_off = approximator.drop_off
     tour = student_utils.convert_locations_to_indices(tour, list_of_locations)
+
+
     return tour, drop_off
 
 class MST():
@@ -85,7 +87,11 @@ class MST():
             edge_count += 1
         self.visited = dict([(i, False) for i in range(self.num_location)])
         self.mst_tree = self.convert_to_tree(self.start_index)
+        self.remove_non_ta_homes(self.mst_tree)
         return self.mst_tree
+
+    def print_mst(self):
+        self.mst_tree.print_tree()
 
     def convert_to_tree(self, i):
         self.visited[i] = True
@@ -98,6 +104,16 @@ class MST():
             return Tree(self.list_of_locations[i], i, self.list_of_homes)
         else:
             return Tree(self.list_of_locations[i], i, self.list_of_homes, branches)
+
+    def remove_non_ta_homes(self, s):
+        if not s.branches:
+            print(s.is_leaf())
+        if s.is_leaf():
+            return
+        for b in s.branches:
+            self.remove_non_ta_homes(b)
+            if b.is_leaf() and not b.is_home():
+                s.branches.remove(b)
 
 
 class Tree():
