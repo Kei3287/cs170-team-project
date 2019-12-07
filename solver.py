@@ -27,7 +27,7 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
         NOTE: both outputs should be in terms of indices not the names of the locations themselves
     """
     adjacency_matrix = [[0 if entry == 'x' else entry for entry in row] for row in adjacency_matrix]
-    mst_obj = MST(list_of_locations, list_of_homes, adjacency_matrix, starting_car_location)
+    mst_obj = MSTCompressed(list_of_locations, list_of_homes, adjacency_matrix, starting_car_location)
     mst_tree = mst_obj.construct_mst()
     approximator = tspApproximation(list_of_locations, list_of_homes, adjacency_matrix, mst_tree, starting_car_location)
     tour = approximator.find_tour()
@@ -35,8 +35,96 @@ def solve(list_of_locations, list_of_homes, starting_car_location, adjacency_mat
     drop_off = approximator.drop_off
     tour = student_utils.convert_locations_to_indices(tour, list_of_locations)
 
-
+    # G, msg = student_utils.adjacency_matrix_to_graph(adjacency_matrix)
+    # cost, msg = student_utils.cost_of_solution(G, tour, drop_off)
+    # print(msg)
+    # assert cost != 'infinite'
     return tour, drop_off
+
+class MSTCompressed():
+    """
+    reference: https://www.geeksforgeeks.org/prims-algorithm-simple-implementation-for-adjacency-matrix-representation/
+    """
+    def __init__(self, list_of_locations, list_of_homes, adjacency_matrix, starting_car_location):
+        self.list_of_locations = list_of_locations
+        self.num_location = len(self.list_of_locations)
+        self.adjacency_matrix = adjacency_matrix
+        self.starting_car_location = starting_car_location
+        self.inMST = [False] * self.num_location
+        self.start_index = list_of_locations.index(starting_car_location)
+        self.inMST[self.start_index] = True
+#         self.mst = [[0 for i in range(self.num_location)] for j in range(self.num_location)]
+        self.mst = np.zeros((self.num_location, self.num_location))
+
+        self.visited = {}
+        self.list_of_homes = list_of_homes
+        self.indices_to_remove = []
+        self.mst_tree = None
+
+    def is_valid_edge(self, u, v):
+        if u == v:
+            return False
+        if self.inMST[u] == False and self.inMST[v] == False:
+            return False
+        elif self.inMST[u] == True and self.inMST[v] == True:
+            return False
+        return True
+
+    def construct_mst(self):
+        edge_count = 0
+        while edge_count < self.num_location - 1:
+            min_val = sys.maxsize
+            a = -1
+            b = -1
+            for i in range(self.num_location):
+                for j in range(self.num_location):
+                    if self.adjacency_matrix[i][j] < min_val and self.adjacency_matrix[i][j] != 0:
+                        if self.is_valid_edge(i, j):
+                            min_val = self.adjacency_matrix[i][j]
+                            a = i
+                            b = j
+            if a != -1 and b != -1:
+                self.inMST[a] = self.inMST[b] = True
+                self.mst[a][b] = min_val
+                self.mst[b][a] = min_val
+            edge_count += 1
+        self.visited = dict([(i, False) for i in range(self.num_location)])
+        self.mst_tree = self.convert_to_tree(self.start_index)
+        self.mst_tree = self.remove_non_ta_homes(self.mst_tree)
+        return self.mst_tree
+
+    def print_mst(self):
+        self.mst_tree.print_tree()
+
+    def convert_to_tree(self, i):
+        self.visited[i] = True
+        branches = []
+        for j in range(self.num_location):
+            if self.mst[i][j] != 0 and not self.visited[j]:
+                branch = self.convert_to_tree(j)
+                branches.append(branch)
+        if not branches:
+            return Tree(self.list_of_locations[i], i, self.list_of_homes)
+        else:
+            return Tree(self.list_of_locations[i], i, self.list_of_homes, branches)
+
+    def remove_non_ta_homes(self, s):
+        if s.is_leaf() and not s.is_home():
+            return None
+        elif s.is_leaf():
+            return s
+        branches = []
+        for b in s.branches:
+            branch = self.remove_non_ta_homes(b)
+            if branch is not None:
+                branches.append(branch)
+        s.branches = branches
+        if not branches and not s.is_home():
+                return None
+        return s
+
+    def move_ta_homes(self):
+        self.mst_tree.move_ta_homes(self.mst_tree)
 
 class MST():
     """
